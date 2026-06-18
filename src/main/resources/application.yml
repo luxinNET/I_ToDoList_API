@@ -54,11 +54,23 @@ springdoc:
 
 app:
   security:
+    cors:
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,https://localhost:*}
     jwt:
       issuer: i-todo
       secret: ${JWT_SECRET:change-me-to-a-strong-256-bit-secret-in-production}
       access-token-ttl: 15m
       refresh-token-ttl: 30d
+  rate-limit:
+    login:
+      permits: 5
+      interval-seconds: 600
+    register:
+      permits: 5
+      interval-seconds: 3600
+    refresh:
+      permits: 30
+      interval-seconds: 3600
   wechat:
     mini-program:
       app-id: ${WECHAT_MINI_PROGRAM_APP_ID:}

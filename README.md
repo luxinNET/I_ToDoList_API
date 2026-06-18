@@ -14,7 +14,13 @@ iTodo is a cross-platform TodoList HTTP API for mini-program, web, and mobile cl
 
 ## Local Development
 
-Prepare PostgreSQL and Redis, then set environment variables if defaults are not suitable:
+Prepare PostgreSQL and Redis. You can start local dependencies with Docker Compose:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+Then set environment variables if defaults are not suitable. See [.env.example](.env.example).
 
 ```bash
 export DB_URL=jdbc:postgresql://localhost:5432/itodo
@@ -22,6 +28,7 @@ export DB_USERNAME=itodo_app
 export DB_PASSWORD=itodo_dev_password
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
+export REDIS_PASSWORD=itodo_redis_dev_password
 export JWT_SECRET=change-me-to-a-strong-256-bit-secret
 ```
 

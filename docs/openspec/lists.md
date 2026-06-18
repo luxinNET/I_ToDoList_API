@@ -1,10 +1,30 @@
-# Lists OpenSpec
+# 清单 OpenSpec
 
-A list groups todos for one owner. System lists such as Tasks, My Day, Important, and Planned are represented by filters or seeded list metadata.
+## 概念
 
-## Rules
+清单用于组织任务。每个清单属于一个用户，后续可扩展共享清单权限。
 
-- A user can create, rename, reorder, and delete custom lists.
-- System lists cannot be deleted.
-- Deleted lists are soft-deleted.
-- All list access is scoped by owner or future shared-list permission.
+系统视图如“我的一天”、“重要”、“计划内”优先通过任务过滤条件实现；用户自定义清单通过 `todo_lists` 表保存。
+
+## 规则
+
+- 用户可以创建、重命名、排序、删除自定义清单。
+- 系统清单不能删除。
+- 删除清单使用软删除。
+- 查询清单必须按当前认证用户 `owner_id` 或共享权限过滤。
+- 删除清单时，清单下任务也应进入不可见状态，MVP 可通过软删除或级联策略实现。
+
+## 排序
+
+- 清单使用 `sort_order` 字段排序。
+- `POST /api/v1/lists/reorder` 用于批量更新排序。
+- 排序接口必须校验所有清单都属于当前用户。
+
+## 默认清单
+
+新用户创建后应初始化默认清单，例如：
+
+- 任务
+- 我的清单
+
+“我的一天”、“重要”、“计划内”作为过滤视图，不一定需要真实清单记录。

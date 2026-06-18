@@ -21,4 +21,8 @@ public record ApiResponse<T>(
     public static ApiResponse<Void> fail(ApiError error, String traceId) {
         return new ApiResponse<>(false, null, error, traceId);
     }
+
+    public ApiResponse<T> withTraceId(String traceId) {
+        return new ApiResponse<>(success, data, error, traceId);
+    }
 }

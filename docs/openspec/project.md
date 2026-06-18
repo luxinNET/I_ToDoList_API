@@ -1,26 +1,30 @@
-# Project OpenSpec
+# 项目 OpenSpec
 
-## Goal
+## 目标
 
-Build a cross-platform TodoList HTTP API that supports mini-program, web, and mobile clients.
+建设一个跨端 TodoList HTTP API，面向小程序端、网页端和 APP 端，提供账号认证、清单管理、任务管理、提醒、标签和多端同步等能力。
 
-## MVP Scope
+## MVP 范围
 
-- Email/password registration and login.
-- Phone/password registration and login.
-- WeChat mini-program code login.
-- JWT access token and refresh token rotation.
-- User profile APIs.
-- Todo lists.
-- Todos with completion, importance, My Day, due date, note, sorting.
-- Todo steps.
-- Tags and reminders as documented API surfaces.
-- Basic incremental sync for multi-client state refresh.
+- 邮箱 + 密码注册与登录。
+- 手机号 + 密码注册与登录。
+- 微信小程序 `code` 登录。
+- JWT access token 与 refresh token 轮换机制。
+- 用户资料接口。
+- 清单管理。
+- 任务管理：完成状态、重要标记、我的一天、截止日期、备注、排序。
+- 任务步骤/子任务。
+- 标签与提醒的基础接口契约。
+- 面向多端状态刷新的基础增量同步。
 
-## Non-goals for MVP
+## MVP 暂不包含
 
-- Full offline conflict merge.
-- Push notifications.
-- Attachments.
-- Shared list collaboration.
-- Admin console.
+- 完整离线冲突合并。
+- 推送通知。
+- 附件上传。
+- 共享清单协作。
+- 管理后台。
+
+## 公开仓库说明
+
+本项目托管在公开 GitHub 仓库中，文档和示例配置不得包含任何真实密钥、Token、数据库密码、Redis 密码、JWT 密钥、微信小程序 `appid`/`secret` 或服务器凭据。

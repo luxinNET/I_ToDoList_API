@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/itodo_test}
+    username: ${TEST_DB_USERNAME:itodo_app}
+    password: ${TEST_DB_PASSWORD:itodo_test_password}
+  flyway:
+    clean-disabled: false
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.example.itodo: DEBUG
