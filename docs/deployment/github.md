@@ -1,11 +1,11 @@
 # GitHub Repository Setup
 
-当前项目已设计为私有 GitHub 仓库优先。
+当前项目托管在公开 GitHub 仓库：`https://github.com/luxinNET/I_ToDoList_API`。
 
 ## 推荐仓库设置
 
-- Repository name: `i_todo`
-- Visibility: Private
+- Repository name: `I_ToDoList_API`
+- Visibility: Public
 - Default branch: `main`
 - Branch protection: MVP 初期可暂缓，第一次可运行后再开启
 
@@ -22,10 +22,10 @@ git commit -m "Initial TodoList API project"
 
 ```bash
 gh auth login
-gh repo create i_todo --private --source=. --remote=origin --push
+gh repo create luxinNET/I_ToDoList_API --public --source=. --remote=origin --push
 ```
 
-## 方式 B：先在 GitHub 网页创建私有仓库
+## 方式 B：先在 GitHub 网页创建公开仓库
 
 创建空仓库后，把仓库地址添加为 remote：
 
