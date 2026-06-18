@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: i-todo
+  profiles:
+    default: dev
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: itodo-hikari
+      maximum-pool-size: 10
+      minimum-idle: 2
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3s
+  jackson:
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deletedAt
+      logic-delete-value: now()
+      logic-not-delete-value: 'null'
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html
+
+app:
+  security:
+    jwt:
+      issuer: i-todo
+      secret: ${JWT_SECRET:change-me-to-a-strong-256-bit-secret-in-production}
+      access-token-ttl: 15m
+      refresh-token-ttl: 30d
+  wechat:
+    mini-program:
+      app-id: ${WECHAT_MINI_PROGRAM_APP_ID:}
+      secret: ${WECHAT_MINI_PROGRAM_SECRET:}
