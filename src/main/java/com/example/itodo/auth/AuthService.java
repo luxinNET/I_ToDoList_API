@@ -15,6 +15,7 @@ import com.example.itodo.infra.ratelimit.RateLimiterService;
 import com.example.itodo.security.CurrentUser;
 import com.example.itodo.security.JwtProperties;
 import com.example.itodo.security.JwtService;
+import com.example.itodo.todo.DefaultTodoListInitializer;
 import com.example.itodo.user.UserStatus;
 import com.example.itodo.user.entity.User;
 import com.example.itodo.user.entity.UserIdentity;
@@ -49,6 +50,7 @@ public class AuthService {
     private final JwtProperties jwtProperties;
     private final RateLimiterService rateLimiterService;
     private final WechatMiniProgramClient wechatMiniProgramClient;
+    private final DefaultTodoListInitializer defaultTodoListInitializer;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(UserMapper userMapper,
@@ -58,7 +60,8 @@ public class AuthService {
                        JwtService jwtService,
                        JwtProperties jwtProperties,
                        RateLimiterService rateLimiterService,
-                       WechatMiniProgramClient wechatMiniProgramClient) {
+                       WechatMiniProgramClient wechatMiniProgramClient,
+                       DefaultTodoListInitializer defaultTodoListInitializer) {
         this.userMapper = userMapper;
         this.userIdentityMapper = userIdentityMapper;
         this.refreshTokenMapper = refreshTokenMapper;
@@ -67,6 +70,7 @@ public class AuthService {
         this.jwtProperties = jwtProperties;
         this.rateLimiterService = rateLimiterService;
         this.wechatMiniProgramClient = wechatMiniProgramClient;
+        this.defaultTodoListInitializer = defaultTodoListInitializer;
     }
 
     @Transactional
@@ -96,6 +100,7 @@ public class AuthService {
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         userMapper.insert(user);
+        defaultTodoListInitializer.initializeForNewUser(user.getId());
 
         return issueTokenPair(user, clientContext);
     }
@@ -212,6 +217,7 @@ public class AuthService {
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         userMapper.insert(user);
+        defaultTodoListInitializer.initializeForNewUser(user.getId());
 
         UserIdentity identity = new UserIdentity();
         identity.setId(UUID.randomUUID());
