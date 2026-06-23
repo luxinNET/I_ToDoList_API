@@ -28,45 +28,26 @@ DB_PASSWORD=replace-me
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_PASSWORD=replace-me
-JWT_SECRET=replace-with-strong-secret
+JWT_SECRET=replace-with-strong-secret-at-least-32-bytes
+CORS_ALLOWED_ORIGIN_PATTERNS=https://app.example.com,https://admin.example.com
 WECHAT_MINI_PROGRAM_APP_ID=replace-me
 WECHAT_MINI_PROGRAM_SECRET=replace-me
 ```
 
+Production startup fails if `JWT_SECRET` is missing, too short, or left as the committed default. Do not use wildcard CORS origins with credentials in production.
+
 ## systemd Service
 
-Create `/etc/systemd/system/itodo.service`:
-
-```ini
-[Unit]
-Description=iTodo Spring Boot API
-After=network.target postgresql.service redis-server.service
-
-[Service]
-User=deploy
-Group=deploy
-WorkingDirectory=/opt/itodo
-EnvironmentFile=/etc/itodo/itodo.env
-ExecStart=/usr/bin/java -jar /opt/itodo/i-todo.jar
-Restart=always
-RestartSec=10
-SuccessExitStatus=143
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=full
-ReadWritePaths=/opt/itodo/logs
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Reload and start:
+Copy [itodo.service](itodo.service) to `/etc/systemd/system/itodo.service` and review the paths/user names.
 
 ```bash
+sudo cp docs/deployment/itodo.service /etc/systemd/system/itodo.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now itodo
 sudo systemctl status itodo
 ```
+
+The unit runs `/opt/itodo/current/i-todo.jar`, so deployments should publish timestamped releases under `/opt/itodo/releases/<release>/` and move the `current` symlink.
 
 ## Nginx
 
@@ -77,6 +58,29 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## Backups
+Keep HSTS commented out until HTTPS and all subdomains are verified.
 
-Run daily PostgreSQL backups and periodically test restore. See [security-checklist.md](security-checklist.md).
+## Deploy
+
+Build the JAR in CI or a trusted build host, then run:
+
+```bash
+sudo ./scripts/deploy.sh target/i-todo-0.0.1-SNAPSHOT.jar
+```
+
+This creates `/opt/itodo/releases/<timestamp>/i-todo.jar`, updates `/opt/itodo/current`, restarts systemd, and runs the health check.
+
+## Rollback
+
+List releases and switch back to a known-good one:
+
+```bash
+ls -1 /opt/itodo/releases
+sudo ./scripts/rollback.sh 20260623-120000
+```
+
+Rollback restarts the service and runs [healthcheck.sh](../../scripts/healthcheck.sh). If health check fails, inspect `journalctl -u itodo -n 200 --no-pager` before choosing another release.
+
+## Backups and Restore Tests
+
+Run daily PostgreSQL backups with [backup-postgres.sh](../../scripts/backup-postgres.sh). Periodically test restore using [restore-test.md](restore-test.md) and record the result in the operations log.

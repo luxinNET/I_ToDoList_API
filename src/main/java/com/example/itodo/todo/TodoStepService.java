@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.itodo.common.error.BusinessException;
 import com.example.itodo.common.error.ErrorCode;
+import com.example.itodo.sync.SyncChangeService;
+import com.example.itodo.sync.SyncOperation;
+import com.example.itodo.sync.SyncResourceType;
 import com.example.itodo.todo.dto.CreateTodoStepRequest;
 import com.example.itodo.todo.dto.ReorderItemRequest;
 import com.example.itodo.todo.dto.ReorderStepsRequest;
@@ -27,11 +30,16 @@ public class TodoStepService {
     private final TodoStepMapper todoStepMapper;
     private final TodoDtoMapper todoDtoMapper;
     private final TodoService todoService;
+    private final SyncChangeService syncChangeService;
 
-    public TodoStepService(TodoStepMapper todoStepMapper, TodoDtoMapper todoDtoMapper, TodoService todoService) {
+    public TodoStepService(TodoStepMapper todoStepMapper,
+                           TodoDtoMapper todoDtoMapper,
+                           TodoService todoService,
+                           SyncChangeService syncChangeService) {
         this.todoStepMapper = todoStepMapper;
         this.todoDtoMapper = todoDtoMapper;
         this.todoService = todoService;
+        this.syncChangeService = syncChangeService;
     }
 
     public List<TodoStepResponse> listSteps(UUID userId, UUID todoId) {
@@ -56,6 +64,7 @@ public class TodoStepService {
         step.setUpdatedAt(now);
         todoStepMapper.insert(step);
         todoService.touchTodo(userId, todoId);
+        syncChangeService.recordChange(userId, SyncResourceType.STEP, step.getId(), SyncOperation.CREATE);
         return todoDtoMapper.toStepResponse(step);
     }
 
@@ -83,6 +92,7 @@ public class TodoStepService {
             step.setUpdatedAt(Instant.now());
             todoStepMapper.updateById(step);
             todoService.touchTodo(userId, todoId);
+            syncChangeService.recordChange(userId, SyncResourceType.STEP, stepId, SyncOperation.UPDATE);
         }
         return todoDtoMapper.toStepResponse(step);
     }
@@ -98,6 +108,7 @@ public class TodoStepService {
                 .set(TodoStep::getDeletedAt, Instant.now())
                 .set(TodoStep::getUpdatedAt, Instant.now()));
         todoService.touchTodo(userId, todoId);
+        syncChangeService.recordChange(userId, SyncResourceType.STEP, stepId, SyncOperation.DELETE);
     }
 
     @Transactional
@@ -117,6 +128,7 @@ public class TodoStepService {
                     .isNull(TodoStep::getDeletedAt)
                     .set(TodoStep::getSortOrder, item.sortOrder())
                     .set(TodoStep::getUpdatedAt, now));
+            syncChangeService.recordChange(userId, SyncResourceType.STEP, item.id(), SyncOperation.UPDATE);
         }
         todoService.touchTodo(userId, todoId);
     }

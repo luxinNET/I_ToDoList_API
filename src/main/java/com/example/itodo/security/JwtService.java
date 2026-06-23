@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -77,7 +78,7 @@ public class JwtService {
     public record IssuedAccessToken(String token, Instant expiresAt) {
     }
 
-    public static class InvalidJwtException extends RuntimeException {
+    public static class InvalidJwtException extends AuthenticationException {
 
         public InvalidJwtException(String message, Throwable cause) {
             super(message, cause);

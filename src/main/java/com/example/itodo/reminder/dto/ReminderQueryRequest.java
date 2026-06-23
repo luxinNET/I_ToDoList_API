@@ -1,23 +1,14 @@
-package com.example.itodo.todo.dto;
+package com.example.itodo.reminder.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.util.UUID;
 
-public record TodoQueryRequest(
-        UUID listId,
+public record ReminderQueryRequest(
         String status,
-        Boolean important,
-        Boolean myDay,
-        LocalDate dueFrom,
-        LocalDate dueTo,
         Instant remindFrom,
         Instant remindTo,
-        String keyword,
-        UUID tagId,
         @Min(1) Integer page,
         @Min(1) @Max(100) Integer size
 ) {
