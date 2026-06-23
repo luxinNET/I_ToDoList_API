@@ -50,10 +50,11 @@ public class TodoController {
                                                        @RequestParam(required = false) Instant remindFrom,
                                                        @RequestParam(required = false) Instant remindTo,
                                                        @RequestParam(required = false) String keyword,
+                                                       @RequestParam(required = false) UUID tagId,
                                                        @RequestParam(required = false) Integer page,
                                                        @RequestParam(required = false) Integer size) {
         return ApiResponse.ok(todoService.queryTodos(currentUser.id(), new TodoQueryRequest(
-                listId, status, important, myDay, dueFrom, dueTo, remindFrom, remindTo, keyword, page, size)));
+                listId, status, important, myDay, dueFrom, dueTo, remindFrom, remindTo, keyword, tagId, page, size)));
     }
 
     @Operation(summary = "创建任务")

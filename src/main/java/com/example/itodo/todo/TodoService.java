@@ -6,6 +6,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.itodo.common.api.PageResponse;
 import com.example.itodo.common.error.BusinessException;
 import com.example.itodo.common.error.ErrorCode;
+import com.example.itodo.sync.SyncChangeService;
+import com.example.itodo.sync.SyncOperation;
+import com.example.itodo.sync.SyncResourceType;
+import com.example.itodo.tag.entity.Tag;
+import com.example.itodo.tag.mapper.TagMapper;
 import com.example.itodo.todo.dto.CreateTodoRequest;
 import com.example.itodo.todo.dto.ReorderItemRequest;
 import com.example.itodo.todo.dto.ReorderTodosRequest;
@@ -13,7 +18,6 @@ import com.example.itodo.todo.dto.TodoQueryRequest;
 import com.example.itodo.todo.dto.TodoResponse;
 import com.example.itodo.todo.dto.UpdateTodoRequest;
 import com.example.itodo.todo.entity.Todo;
-import com.example.itodo.todo.entity.TodoList;
 import com.example.itodo.todo.entity.TodoStep;
 import com.example.itodo.todo.mapper.TodoMapper;
 import com.example.itodo.todo.mapper.TodoStepMapper;
@@ -35,17 +39,23 @@ public class TodoService {
     private final TodoDtoMapper todoDtoMapper;
     private final TodoListService todoListService;
     private final DefaultTodoListInitializer defaultTodoListInitializer;
+    private final TagMapper tagMapper;
+    private final SyncChangeService syncChangeService;
 
     public TodoService(TodoMapper todoMapper,
                        TodoStepMapper todoStepMapper,
                        TodoDtoMapper todoDtoMapper,
                        TodoListService todoListService,
-                       DefaultTodoListInitializer defaultTodoListInitializer) {
+                       DefaultTodoListInitializer defaultTodoListInitializer,
+                       TagMapper tagMapper,
+                       SyncChangeService syncChangeService) {
         this.todoMapper = todoMapper;
         this.todoStepMapper = todoStepMapper;
         this.todoDtoMapper = todoDtoMapper;
         this.todoListService = todoListService;
         this.defaultTodoListInitializer = defaultTodoListInitializer;
+        this.tagMapper = tagMapper;
+        this.syncChangeService = syncChangeService;
     }
 
     public PageResponse<TodoResponse> queryTodos(UUID userId, TodoQueryRequest request) {
@@ -57,23 +67,23 @@ public class TodoService {
     }
 
     public PageResponse<TodoResponse> queryMyDay(UUID userId, Integer page, Integer size) {
-        return queryTodos(userId, new TodoQueryRequest(null, TodoStatus.ACTIVE, null, true, null, null, null, null, null, page, size));
+        return queryTodos(userId, new TodoQueryRequest(null, TodoStatus.ACTIVE, null, true, null, null, null, null, null, null, page, size));
     }
 
     public PageResponse<TodoResponse> queryImportant(UUID userId, Integer page, Integer size) {
-        return queryTodos(userId, new TodoQueryRequest(null, null, true, null, null, null, null, null, null, page, size));
+        return queryTodos(userId, new TodoQueryRequest(null, null, true, null, null, null, null, null, null, null, page, size));
     }
 
     public PageResponse<TodoResponse> queryCompleted(UUID userId, Integer page, Integer size) {
-        return queryTodos(userId, new TodoQueryRequest(null, TodoStatus.COMPLETED, null, null, null, null, null, null, null, page, size));
+        return queryTodos(userId, new TodoQueryRequest(null, TodoStatus.COMPLETED, null, null, null, null, null, null, null, null, page, size));
     }
 
     public PageResponse<TodoResponse> queryAll(UUID userId, Integer page, Integer size) {
-        return queryTodos(userId, new TodoQueryRequest(null, null, null, null, null, null, null, null, null, page, size));
+        return queryTodos(userId, new TodoQueryRequest(null, null, null, null, null, null, null, null, null, null, page, size));
     }
 
     public PageResponse<TodoResponse> queryPlanned(UUID userId, Integer page, Integer size) {
-        TodoQueryRequest request = new TodoQueryRequest(null, null, null, null, null, null, null, null, null, page, size);
+        TodoQueryRequest request = new TodoQueryRequest(null, null, null, null, null, null, null, null, null, null, page, size);
         LambdaQueryWrapper<Todo> wrapper = baseTodoQuery(userId)
                 .and(nested -> nested.isNotNull(Todo::getDueDate).or().isNotNull(Todo::getRemindAt))
                 .orderByAsc(Todo::getDueDate)
@@ -110,6 +120,7 @@ public class TodoService {
         todo.setCreatedAt(now);
         todo.setUpdatedAt(now);
         todoMapper.insert(todo);
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todo.getId(), SyncOperation.CREATE);
         return todoDtoMapper.toTodoResponse(todo);
     }
 
@@ -172,6 +183,7 @@ public class TodoService {
         if (changed) {
             touch(todo);
             todoMapper.updateById(todo);
+            syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
         }
         return todoDtoMapper.toTodoResponse(todo);
     }
@@ -192,6 +204,7 @@ public class TodoService {
                 .isNull(TodoStep::getDeletedAt)
                 .set(TodoStep::getDeletedAt, now)
                 .set(TodoStep::getUpdatedAt, now));
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.DELETE);
     }
 
     @Transactional
@@ -201,6 +214,7 @@ public class TodoService {
         todo.setCompletedAt(Instant.now());
         touch(todo);
         todoMapper.updateById(todo);
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
         return todoDtoMapper.toTodoResponse(todo);
     }
 
@@ -211,6 +225,7 @@ public class TodoService {
         todo.setCompletedAt(null);
         touch(todo);
         todoMapper.updateById(todo);
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
         return todoDtoMapper.toTodoResponse(todo);
     }
 
@@ -255,10 +270,11 @@ public class TodoService {
                     .set(Todo::getSortOrder, item.sortOrder())
                     .set(Todo::getUpdatedAt, now)
                     .setSql("version = version + 1"));
+            syncChangeService.recordChange(userId, SyncResourceType.TODO, item.id(), SyncOperation.UPDATE);
         }
     }
 
-    Todo requireOwnedTodo(UUID userId, UUID todoId) {
+    public Todo requireOwnedTodo(UUID userId, UUID todoId) {
         Todo todo = todoMapper.selectOne(baseTodoQuery(userId).eq(Todo::getId, todoId));
         if (todo == null) {
             throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Todo not found");
@@ -266,13 +282,25 @@ public class TodoService {
         return todo;
     }
 
-    void touchTodo(UUID userId, UUID todoId) {
+    public void touchTodo(UUID userId, UUID todoId) {
         todoMapper.update(null, new LambdaUpdateWrapper<Todo>()
                 .eq(Todo::getOwnerId, userId)
                 .eq(Todo::getId, todoId)
                 .isNull(Todo::getDeletedAt)
                 .set(Todo::getUpdatedAt, Instant.now())
                 .setSql("version = version + 1"));
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
+    }
+
+    public void updateReminderSnapshot(UUID userId, UUID todoId, Instant remindAt) {
+        todoMapper.update(null, new LambdaUpdateWrapper<Todo>()
+                .eq(Todo::getOwnerId, userId)
+                .eq(Todo::getId, todoId)
+                .isNull(Todo::getDeletedAt)
+                .set(Todo::getRemindAt, remindAt)
+                .set(Todo::getUpdatedAt, Instant.now())
+                .setSql("version = version + 1"));
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
     }
 
     private TodoResponse updateImportance(UUID userId, UUID todoId, String importance) {
@@ -280,6 +308,7 @@ public class TodoService {
         todo.setImportance(importance);
         touch(todo);
         todoMapper.updateById(todo);
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
         return todoDtoMapper.toTodoResponse(todo);
     }
 
@@ -288,6 +317,7 @@ public class TodoService {
         todo.setMyDay(myDay);
         touch(todo);
         todoMapper.updateById(todo);
+        syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.UPDATE);
         return todoDtoMapper.toTodoResponse(todo);
     }
 
@@ -321,6 +351,10 @@ public class TodoService {
         if (StringUtils.hasText(request.keyword())) {
             wrapper.and(nested -> nested.apply("(title ILIKE {0} OR note ILIKE {0})", "%" + request.keyword().trim() + "%"));
         }
+        if (request.tagId() != null) {
+            requireOwnedTag(userId, request.tagId());
+            wrapper.apply("EXISTS (SELECT 1 FROM todo_tags tt WHERE tt.todo_id = todos.id AND tt.tag_id = {0})", request.tagId());
+        }
         return wrapper;
     }
 
@@ -328,6 +362,16 @@ public class TodoService {
         return new LambdaQueryWrapper<Todo>()
                 .eq(Todo::getOwnerId, userId)
                 .isNull(Todo::getDeletedAt);
+    }
+
+    private void requireOwnedTag(UUID userId, UUID tagId) {
+        Tag tag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
+                .eq(Tag::getUserId, userId)
+                .eq(Tag::getId, tagId)
+                .isNull(Tag::getDeletedAt));
+        if (tag == null) {
+            throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "Tag not found");
+        }
     }
 
     private void applyDefaultSort(LambdaQueryWrapper<Todo> wrapper, TodoQueryRequest request) {

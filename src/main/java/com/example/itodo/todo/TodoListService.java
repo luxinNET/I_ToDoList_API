@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.itodo.common.error.BusinessException;
 import com.example.itodo.common.error.ErrorCode;
+import com.example.itodo.sync.SyncChangeService;
+import com.example.itodo.sync.SyncOperation;
+import com.example.itodo.sync.SyncResourceType;
 import com.example.itodo.todo.dto.CreateTodoListRequest;
 import com.example.itodo.todo.dto.ReorderItemRequest;
 import com.example.itodo.todo.dto.ReorderListsRequest;
@@ -33,17 +36,20 @@ public class TodoListService {
     private final TodoStepMapper todoStepMapper;
     private final TodoDtoMapper todoDtoMapper;
     private final DefaultTodoListInitializer defaultTodoListInitializer;
+    private final SyncChangeService syncChangeService;
 
     public TodoListService(TodoListMapper todoListMapper,
                            TodoMapper todoMapper,
                            TodoStepMapper todoStepMapper,
                            TodoDtoMapper todoDtoMapper,
-                           DefaultTodoListInitializer defaultTodoListInitializer) {
+                           DefaultTodoListInitializer defaultTodoListInitializer,
+                           SyncChangeService syncChangeService) {
         this.todoListMapper = todoListMapper;
         this.todoMapper = todoMapper;
         this.todoStepMapper = todoStepMapper;
         this.todoDtoMapper = todoDtoMapper;
         this.defaultTodoListInitializer = defaultTodoListInitializer;
+        this.syncChangeService = syncChangeService;
     }
 
     public List<TodoListResponse> listLists(UUID userId) {
@@ -73,6 +79,7 @@ public class TodoListService {
         todoList.setCreatedAt(now);
         todoList.setUpdatedAt(now);
         todoListMapper.insert(todoList);
+        syncChangeService.recordChange(userId, SyncResourceType.LIST, todoList.getId(), SyncOperation.CREATE);
         return todoDtoMapper.toListResponse(todoList);
     }
 
@@ -98,6 +105,7 @@ public class TodoListService {
         if (changed) {
             todoList.setUpdatedAt(Instant.now());
             todoListMapper.updateById(todoList);
+            syncChangeService.recordChange(userId, SyncResourceType.LIST, listId, SyncOperation.UPDATE);
         }
         return todoDtoMapper.toListResponse(todoList);
     }
@@ -139,6 +147,8 @@ public class TodoListService {
                     .set(TodoStep::getDeletedAt, now)
                     .set(TodoStep::getUpdatedAt, now));
         }
+        syncChangeService.recordChange(userId, SyncResourceType.LIST, listId, SyncOperation.DELETE);
+        todoIds.forEach(todoId -> syncChangeService.recordChange(userId, SyncResourceType.TODO, todoId, SyncOperation.DELETE));
     }
 
     @Transactional
@@ -157,6 +167,7 @@ public class TodoListService {
                     .isNull(TodoList::getDeletedAt)
                     .set(TodoList::getSortOrder, item.sortOrder())
                     .set(TodoList::getUpdatedAt, now));
+            syncChangeService.recordChange(userId, SyncResourceType.LIST, item.id(), SyncOperation.UPDATE);
         }
     }
 

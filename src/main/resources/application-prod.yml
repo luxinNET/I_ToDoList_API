@@ -14,7 +14,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health
+
+app:
+  security:
+    public-docs-enabled: false
+    cors:
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS}
 
 logging:
   level:

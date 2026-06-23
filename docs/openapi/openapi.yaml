@@ -100,10 +100,10 @@ paths:
   /api/v1/auth/wechat-mini-program/bind-phone:
     post:
       tags: [Auth]
-      summary: Bind phone number from mini-program encrypted data
+      summary: Bind phone number from mini-program encrypted data (future capability)
       responses:
-        '200':
-          description: Phone bound
+        '501':
+          description: Not implemented in current MVP
   /api/v1/users/me:
     get:
       tags: [Users]
@@ -137,16 +137,32 @@ paths:
       responses:
         '200':
           description: Todo lists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListListEnvelope'
     post:
       tags: [Lists]
       summary: Create a todo list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoListRequest'
       responses:
         '200':
-          description: Created
+          $ref: '#/components/responses/TodoListSuccess'
   /api/v1/lists/reorder:
     post:
       tags: [Lists]
       summary: Reorder todo lists
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderItemsRequest'
       responses:
         '200':
           description: Reordered
@@ -158,15 +174,21 @@ paths:
         - $ref: '#/components/parameters/ListId'
       responses:
         '200':
-          description: Todo list
+          $ref: '#/components/responses/TodoListSuccess'
     patch:
       tags: [Lists]
       summary: Update a todo list
       parameters:
         - $ref: '#/components/parameters/ListId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoListRequest'
       responses:
         '200':
-          description: Updated
+          $ref: '#/components/responses/TodoListSuccess'
     delete:
       tags: [Lists]
       summary: Delete a todo list
@@ -179,37 +201,52 @@ paths:
     get:
       tags: [Views]
       summary: Get My Day todos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Todos
+          $ref: '#/components/responses/TodoPageSuccess'
   /api/v1/views/important/todos:
     get:
       tags: [Views]
       summary: Get important todos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Todos
+          $ref: '#/components/responses/TodoPageSuccess'
   /api/v1/views/planned/todos:
     get:
       tags: [Views]
       summary: Get planned todos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Todos
+          $ref: '#/components/responses/TodoPageSuccess'
   /api/v1/views/completed/todos:
     get:
       tags: [Views]
       summary: Get completed todos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Todos
+          $ref: '#/components/responses/TodoPageSuccess'
   /api/v1/views/all/todos:
     get:
       tags: [Views]
       summary: Get all visible todos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Todos
+          $ref: '#/components/responses/TodoPageSuccess'
   /api/v1/todos:
     get:
       tags: [Todos]
@@ -253,30 +290,42 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: keyword
+          in: query
+          schema:
+            type: string
         - name: tagId
           in: query
           schema:
             type: string
             format: uuid
-        - name: keyword
-          in: query
-          schema:
-            type: string
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Todos
+          $ref: '#/components/responses/TodoPageSuccess'
     post:
       tags: [Todos]
       summary: Create a todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
       responses:
         '200':
-          description: Created
+          $ref: '#/components/responses/TodoSuccess'
   /api/v1/todos/reorder:
     post:
       tags: [Todos]
       summary: Reorder todos in a list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderTodosRequest'
       responses:
         '200':
           description: Reordered
@@ -288,15 +337,21 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Todo
+          $ref: '#/components/responses/TodoSuccess'
     patch:
       tags: [Todos]
       summary: Update a todo
       parameters:
         - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoRequest'
       responses:
         '200':
-          description: Updated
+          $ref: '#/components/responses/TodoSuccess'
     delete:
       tags: [Todos]
       summary: Delete a todo
@@ -313,7 +368,7 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Completed
+          $ref: '#/components/responses/TodoSuccess'
   /api/v1/todos/{todoId}/uncomplete:
     post:
       tags: [Todos]
@@ -322,7 +377,7 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Restored
+          $ref: '#/components/responses/TodoSuccess'
   /api/v1/todos/{todoId}/important:
     post:
       tags: [Todos]
@@ -331,7 +386,7 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Marked important
+          $ref: '#/components/responses/TodoSuccess'
     delete:
       tags: [Todos]
       summary: Remove important mark
@@ -339,7 +394,7 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Removed important mark
+          $ref: '#/components/responses/TodoSuccess'
   /api/v1/todos/{todoId}/my-day:
     post:
       tags: [Todos]
@@ -348,7 +403,7 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Added
+          $ref: '#/components/responses/TodoSuccess'
     delete:
       tags: [Todos]
       summary: Remove a todo from My Day
@@ -356,7 +411,7 @@ paths:
         - $ref: '#/components/parameters/TodoId'
       responses:
         '200':
-          description: Removed
+          $ref: '#/components/responses/TodoSuccess'
   /api/v1/todos/{todoId}/steps:
     get:
       tags: [Steps]
@@ -366,20 +421,36 @@ paths:
       responses:
         '200':
           description: Steps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoStepListEnvelope'
     post:
       tags: [Steps]
       summary: Create a todo step
       parameters:
         - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoStepRequest'
       responses:
         '200':
-          description: Created
+          $ref: '#/components/responses/TodoStepSuccess'
   /api/v1/todos/{todoId}/steps/reorder:
     post:
       tags: [Steps]
       summary: Reorder todo steps
       parameters:
         - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderItemsRequest'
       responses:
         '200':
           description: Reordered
@@ -390,9 +461,15 @@ paths:
       parameters:
         - $ref: '#/components/parameters/TodoId'
         - $ref: '#/components/parameters/StepId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoStepRequest'
       responses:
         '200':
-          description: Updated
+          $ref: '#/components/responses/TodoStepSuccess'
     delete:
       tags: [Steps]
       summary: Delete a todo step
@@ -409,21 +486,37 @@ paths:
       responses:
         '200':
           description: Tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagListEnvelope'
     post:
       tags: [Tags]
       summary: Create a tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
       responses:
         '200':
-          description: Created
+          $ref: '#/components/responses/TagSuccess'
   /api/v1/tags/{tagId}:
     patch:
       tags: [Tags]
       summary: Update a tag
       parameters:
         - $ref: '#/components/parameters/TagId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTagRequest'
       responses:
         '200':
-          description: Updated
+          $ref: '#/components/responses/TagSuccess'
     delete:
       tags: [Tags]
       summary: Delete a tag
@@ -455,18 +548,42 @@ paths:
     get:
       tags: [Reminders]
       summary: List reminders
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, SENT, CANCELLED]
+        - name: remindFrom
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: remindTo
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Reminders
+          $ref: '#/components/responses/ReminderPageSuccess'
   /api/v1/todos/{todoId}/reminders:
     post:
       tags: [Reminders]
       summary: Create a reminder for a todo
       parameters:
         - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReminderRequest'
       responses:
         '200':
-          description: Created
+          $ref: '#/components/responses/ReminderSuccess'
   /api/v1/todos/{todoId}/reminders/{reminderId}:
     patch:
       tags: [Reminders]
@@ -474,9 +591,15 @@ paths:
       parameters:
         - $ref: '#/components/parameters/TodoId'
         - $ref: '#/components/parameters/ReminderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReminderRequest'
       responses:
         '200':
-          description: Updated
+          $ref: '#/components/responses/ReminderSuccess'
     delete:
       tags: [Reminders]
       summary: Delete a reminder
@@ -500,28 +623,42 @@ paths:
         - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Search results
+          $ref: '#/components/responses/TodoPageSuccess'
   /api/v1/sync/bootstrap:
     get:
       tags: [Sync]
       summary: Fetch initial sync state
       responses:
         '200':
-          description: Bootstrap state
+          description: Sync bootstrap snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncBootstrapEnvelope'
   /api/v1/sync/changes:
     get:
       tags: [Sync]
-      summary: Fetch changes since a version
+      summary: Fetch sync changes after a version
       parameters:
         - name: sinceVersion
           in: query
-          required: true
           schema:
             type: integer
             format: int64
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
       responses:
         '200':
-          description: Incremental changes
+          description: Sync changes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncChangesEnvelope'
 components:
   securitySchemes:
     bearerAuth:
@@ -533,52 +670,35 @@ components:
       name: listId
       in: path
       required: true
-      schema:
-        type: string
-        format: uuid
+      schema: { type: string, format: uuid }
     TodoId:
       name: todoId
       in: path
       required: true
-      schema:
-        type: string
-        format: uuid
+      schema: { type: string, format: uuid }
     StepId:
       name: stepId
       in: path
       required: true
-      schema:
-        type: string
-        format: uuid
+      schema: { type: string, format: uuid }
     TagId:
       name: tagId
       in: path
       required: true
-      schema:
-        type: string
-        format: uuid
+      schema: { type: string, format: uuid }
     ReminderId:
       name: reminderId
       in: path
       required: true
-      schema:
-        type: string
-        format: uuid
+      schema: { type: string, format: uuid }
     Page:
       name: page
       in: query
-      schema:
-        type: integer
-        minimum: 1
-        default: 1
+      schema: { type: integer, minimum: 1, default: 1 }
     Size:
       name: size
       in: query
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 20
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
   responses:
     AuthSuccess:
       description: Auth operation succeeded
@@ -586,97 +706,412 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AuthResponseEnvelope'
+    TodoListSuccess:
+      description: Todo list operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TodoListResponseEnvelope'
+    TodoSuccess:
+      description: Todo operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TodoResponseEnvelope'
+    TodoPageSuccess:
+      description: Todo page query succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TodoPageResponseEnvelope'
+    TodoStepSuccess:
+      description: Todo step operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TodoStepResponseEnvelope'
+    TagSuccess:
+      description: Tag operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TagResponseEnvelope'
+    ReminderSuccess:
+      description: Reminder operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReminderResponseEnvelope'
+    ReminderPageSuccess:
+      description: Reminder page query succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReminderPageResponseEnvelope'
   schemas:
     ApiError:
       type: object
       properties:
-        code:
-          type: string
-        message:
-          type: string
+        code: { type: string }
+        message: { type: string }
         details:
           type: array
           items:
             type: object
             properties:
-              field:
-                type: string
-              message:
-                type: string
+              field: { type: string }
+              message: { type: string }
     RegisterRequest:
       type: object
       required: [password]
       properties:
-        email:
-          type: string
-          format: email
-        phone:
-          type: string
-        password:
-          type: string
-          minLength: 8
-        displayName:
-          type: string
+        email: { type: string, format: email }
+        phone: { type: string }
+        password: { type: string, minLength: 8 }
+        displayName: { type: string }
     LoginRequest:
       type: object
       required: [account, password]
       properties:
-        account:
-          type: string
-        password:
-          type: string
-        clientType:
-          type: string
-        deviceId:
-          type: string
+        account: { type: string }
+        password: { type: string }
+        clientType: { type: string }
+        deviceId: { type: string }
     RefreshTokenRequest:
       type: object
       required: [refreshToken]
       properties:
-        refreshToken:
-          type: string
-        clientType:
-          type: string
-        deviceId:
-          type: string
+        refreshToken: { type: string }
+        clientType: { type: string }
+        deviceId: { type: string }
     WechatMiniProgramLoginRequest:
       type: object
       required: [code]
       properties:
-        code:
-          type: string
-        encryptedData:
-          type: string
-        iv:
-          type: string
-        clientType:
-          type: string
-        deviceId:
-          type: string
+        code: { type: string }
+        encryptedData: { type: string }
+        iv: { type: string }
+        clientType: { type: string }
+        deviceId: { type: string }
     AuthResponse:
       type: object
       properties:
-        userId:
-          type: string
-          format: uuid
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-        accessTokenExpiresAt:
-          type: string
-          format: date-time
-        refreshTokenExpiresAt:
-          type: string
-          format: date-time
+        userId: { type: string, format: uuid }
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        accessTokenExpiresAt: { type: string, format: date-time }
+        refreshTokenExpiresAt: { type: string, format: date-time }
+    TodoListResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        color: { type: string }
+        icon: { type: string }
+        sortOrder: { type: integer }
+        isSystem: { type: boolean }
+        isShared: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateTodoListRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 128 }
+        color: { type: string, maxLength: 32 }
+        icon: { type: string, maxLength: 64 }
+    UpdateTodoListRequest:
+      type: object
+      properties:
+        name: { type: string, maxLength: 128 }
+        color: { type: string, maxLength: 32 }
+        icon: { type: string, maxLength: 64 }
+    ReorderItemRequest:
+      type: object
+      required: [id, sortOrder]
+      properties:
+        id: { type: string, format: uuid }
+        sortOrder: { type: integer }
+    ReorderItemsRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ReorderItemRequest' }
+    ReorderTodosRequest:
+      type: object
+      required: [listId, items]
+      properties:
+        listId: { type: string, format: uuid }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ReorderItemRequest' }
+    CreateTodoRequest:
+      type: object
+      required: [title]
+      properties:
+        listId: { type: string, format: uuid }
+        title: { type: string, maxLength: 255 }
+        note: { type: string }
+        dueDate: { type: string, format: date }
+        remindAt: { type: string, format: date-time }
+        repeatRule: { type: string, maxLength: 255 }
+        myDay: { type: boolean }
+        important: { type: boolean }
+        sortOrder: { type: integer }
+    UpdateTodoRequest:
+      type: object
+      properties:
+        listId: { type: string, format: uuid }
+        title: { type: string, maxLength: 255 }
+        note: { type: string }
+        dueDate: { type: string, format: date }
+        remindAt: { type: string, format: date-time }
+        repeatRule: { type: string, maxLength: 255 }
+        myDay: { type: boolean }
+        important: { type: boolean }
+        sortOrder: { type: integer }
+        clearNote: { type: boolean }
+        clearDueDate: { type: boolean }
+        clearRemindAt: { type: boolean }
+        clearRepeatRule: { type: boolean }
+    TodoResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        listId: { type: string, format: uuid }
+        title: { type: string }
+        note: { type: string }
+        status: { type: string, enum: [ACTIVE, COMPLETED] }
+        importance: { type: string, enum: [NORMAL, IMPORTANT] }
+        dueDate: { type: string, format: date }
+        remindAt: { type: string, format: date-time }
+        repeatRule: { type: string }
+        completedAt: { type: string, format: date-time }
+        sortOrder: { type: integer }
+        myDay: { type: boolean }
+        version: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateTodoStepRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 255 }
+        isCompleted: { type: boolean }
+        sortOrder: { type: integer }
+    UpdateTodoStepRequest:
+      type: object
+      properties:
+        title: { type: string, maxLength: 255 }
+        isCompleted: { type: boolean }
+        sortOrder: { type: integer }
+    TodoStepResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        todoId: { type: string, format: uuid }
+        title: { type: string }
+        isCompleted: { type: boolean }
+        sortOrder: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateTagRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 64 }
+        color: { type: string, maxLength: 32 }
+    UpdateTagRequest:
+      type: object
+      properties:
+        name: { type: string, maxLength: 64 }
+        color: { type: string, maxLength: 32 }
+    TagResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        color: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateReminderRequest:
+      type: object
+      required: [remindAt]
+      properties:
+        remindAt: { type: string, format: date-time }
+        channel: { type: string, enum: [IN_APP] }
+    UpdateReminderRequest:
+      type: object
+      properties:
+        remindAt: { type: string, format: date-time }
+        channel: { type: string, enum: [IN_APP] }
+        status: { type: string, enum: [PENDING, SENT, CANCELLED] }
+    ReminderResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        todoId: { type: string, format: uuid }
+        remindAt: { type: string, format: date-time }
+        channel: { type: string }
+        status: { type: string, enum: [PENDING, SENT, CANCELLED] }
+        sentAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    TodoTagLinkResponse:
+      type: object
+      properties:
+        todoId: { type: string, format: uuid }
+        tagId: { type: string, format: uuid }
+    SyncChangeResponse:
+      type: object
+      properties:
+        version: { type: integer, format: int64 }
+        resourceType: { type: string, enum: [LIST, TODO, STEP, TAG, TODO_TAG, REMINDER] }
+        resourceId: { type: string, format: uuid }
+        operation: { type: string, enum: [CREATE, UPDATE, DELETE] }
+        changedAt: { type: string, format: date-time }
+    SyncChangesResponse:
+      type: object
+      properties:
+        sinceVersion: { type: integer, format: int64 }
+        currentVersion: { type: integer, format: int64 }
+        changes:
+          type: array
+          items: { $ref: '#/components/schemas/SyncChangeResponse' }
+    SyncBootstrapResponse:
+      type: object
+      properties:
+        currentVersion: { type: integer, format: int64 }
+        lists:
+          type: array
+          items: { $ref: '#/components/schemas/TodoListResponse' }
+        todos:
+          type: array
+          items: { $ref: '#/components/schemas/TodoResponse' }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/TodoStepResponse' }
+        tags:
+          type: array
+          items: { $ref: '#/components/schemas/TagResponse' }
+        todoTags:
+          type: array
+          items: { $ref: '#/components/schemas/TodoTagLinkResponse' }
+        reminders:
+          type: array
+          items: { $ref: '#/components/schemas/ReminderResponse' }
     AuthResponseEnvelope:
       type: object
       properties:
-        success:
-          type: boolean
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/AuthResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TodoListResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/TodoListResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TodoListListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
         data:
-          $ref: '#/components/schemas/AuthResponse'
-        error:
-          $ref: '#/components/schemas/ApiError'
-        traceId:
-          type: string
+          type: array
+          items: { $ref: '#/components/schemas/TodoListResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TodoResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/TodoResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TodoPageResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/TodoResponse' }
+            total: { type: integer, format: int64 }
+            page: { type: integer, format: int64 }
+            size: { type: integer, format: int64 }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TodoStepResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/TodoStepResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TodoStepListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/TodoStepResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TagResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/TagResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    TagListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/TagResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    ReminderResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/ReminderResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    ReminderPageResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/ReminderResponse' }
+            total: { type: integer, format: int64 }
+            page: { type: integer, format: int64 }
+            size: { type: integer, format: int64 }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    SyncBootstrapEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/SyncBootstrapResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    SyncChangesEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/SyncChangesResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }

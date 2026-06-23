@@ -29,7 +29,8 @@ public class SecurityConfig {
                                             CorsConfigurationSource corsConfigurationSource,
                                             JsonAuthenticationEntryPoint authenticationEntryPoint,
                                             JsonAccessDeniedHandler accessDeniedHandler,
-                                            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+                                            JwtAuthenticationFilter jwtAuthenticationFilter,
+                                            @Value("${app.security.public-docs-enabled:true}") boolean publicDocsEnabled) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -42,8 +43,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/wechat-mini-program/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/info").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").access((authentication, context) ->
+                                new org.springframework.security.authorization.AuthorizationDecision(publicDocsEnabled))
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

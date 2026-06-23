@@ -10,7 +10,12 @@ if [[ ! -f "$APP_JAR" ]]; then
   exit 1
 fi
 
-install -d "$REMOTE_DIR"
-cp "$APP_JAR" "$REMOTE_DIR/i-todo.jar"
+RELEASE=${RELEASE:-$(date +%Y%m%d-%H%M%S)}
+RELEASE_DIR="$REMOTE_DIR/releases/$RELEASE"
+
+install -d "$RELEASE_DIR" "$REMOTE_DIR/logs"
+cp "$APP_JAR" "$RELEASE_DIR/i-todo.jar"
+ln -sfn "$RELEASE_DIR" "$REMOTE_DIR/current"
 systemctl restart "$SERVICE"
+./scripts/healthcheck.sh
 systemctl status "$SERVICE" --no-pager
