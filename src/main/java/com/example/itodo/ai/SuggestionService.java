@@ -2,7 +2,7 @@ package com.example.itodo.ai;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.itodo.todo.entity.Todo;
-import com.example.itodo.todo.entity.TodoStatus;
+import com.example.itodo.todo.TodoStatus;
 import com.example.itodo.todo.mapper.TodoMapper;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +31,7 @@ public class SuggestionService {
         LambdaQueryWrapper<Todo> overdueWrapper = new LambdaQueryWrapper<>();
         overdueWrapper.eq(Todo::getOwnerId, userId)
                      .lt(Todo::getDueDate, LocalDate.now())
-                     .eq(Todo::getStatus, TodoStatus.ACTIVE.name())
+                     .eq(Todo::getStatus, TodoStatus.ACTIVE)
                      .isNull(Todo::getDeletedAt)
                      .last("LIMIT " + limit);
         candidates.addAll(todoMapper.selectList(overdueWrapper));
@@ -41,7 +41,7 @@ public class SuggestionService {
             LambdaQueryWrapper<Todo> todayWrapper = new LambdaQueryWrapper<>();
             todayWrapper.eq(Todo::getOwnerId, userId)
                        .eq(Todo::getDueDate, LocalDate.now())
-                       .eq(Todo::getStatus, TodoStatus.ACTIVE.name())
+                       .eq(Todo::getStatus, TodoStatus.ACTIVE)
                        .isNull(Todo::getDeletedAt)
                        .last("LIMIT " + (limit - candidates.size()));
             candidates.addAll(todoMapper.selectList(todayWrapper));
@@ -52,7 +52,7 @@ public class SuggestionService {
             LambdaQueryWrapper<Todo> importantWrapper = new LambdaQueryWrapper<>();
             importantWrapper.eq(Todo::getOwnerId, userId)
                           .eq(Todo::getImportance, "IMPORTANT")
-                          .eq(Todo::getStatus, TodoStatus.ACTIVE.name())
+                          .eq(Todo::getStatus, TodoStatus.ACTIVE)
                           .isNull(Todo::getDeletedAt)
                           .last("LIMIT " + (limit - candidates.size()));
             candidates.addAll(todoMapper.selectList(importantWrapper));

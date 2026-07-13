@@ -2,7 +2,7 @@ package com.example.itodo.ai;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.itodo.todo.entity.Todo;
-import com.example.itodo.todo.entity.TodoStatus;
+import com.example.itodo.todo.TodoStatus;
 import com.example.itodo.todo.mapper.TodoMapper;
 import org.springframework.stereotype.Service;
 
@@ -55,11 +55,11 @@ public class ReportAggregator {
         );
     }
 
-    private long countByDateAndStatus(UUID userId, LocalDate date, TodoStatus status) {
+    private long countByDateAndStatus(UUID userId, LocalDate date, String status) {
         LambdaQueryWrapper<Todo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Todo::getOwnerId, userId)
                .eq(Todo::getDueDate, date)
-               .eq(Todo::getStatus, status.name())
+               .eq(Todo::getStatus, status)
                .isNull(Todo::getDeletedAt);
         
         return todoMapper.selectCount(wrapper);
@@ -78,7 +78,7 @@ public class ReportAggregator {
         LambdaQueryWrapper<Todo> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Todo::getOwnerId, userId)
                .lt(Todo::getDueDate, date)
-               .eq(Todo::getStatus, TodoStatus.ACTIVE.name())
+               .eq(Todo::getStatus, TodoStatus.ACTIVE)
                .isNull(Todo::getDeletedAt);
         
         return todoMapper.selectCount(wrapper);
