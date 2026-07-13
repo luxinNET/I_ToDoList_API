@@ -2,6 +2,7 @@ package com.example.itodo.auth;
 
 import com.example.itodo.common.error.BusinessException;
 import com.example.itodo.common.error.ErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -15,10 +16,14 @@ public class DefaultWechatMiniProgramClient implements WechatMiniProgramClient {
 
     private final WechatMiniProgramProperties properties;
     private final RestClient restClient;
+    private final ObjectMapper objectMapper;
 
-    public DefaultWechatMiniProgramClient(WechatMiniProgramProperties properties, RestClient.Builder restClientBuilder) {
+    public DefaultWechatMiniProgramClient(WechatMiniProgramProperties properties,
+                                          RestClient.Builder restClientBuilder,
+                                          ObjectMapper objectMapper) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -27,11 +32,24 @@ public class DefaultWechatMiniProgramClient implements WechatMiniProgramClient {
             throw new BusinessException(ErrorCode.EXTERNAL_AUTH_FAILED, "WeChat mini-program credentials are not configured");
         }
 
-        CodeToSessionResponse response = restClient.get()
+        // WeChat returns Content-Type "text/plain" even though the body is JSON,
+        // so read it as a raw String first and parse with Jackson manually.
+        String body = restClient.get()
                 .uri(CODE_TO_SESSION_URL + "?appid={appId}&secret={secret}&js_code={code}&grant_type=authorization_code",
                         properties.appId(), properties.secret(), code)
                 .retrieve()
-                .body(CodeToSessionResponse.class);
+                .body(String.class);
+
+        if (!StringUtils.hasText(body)) {
+            throw new BusinessException(ErrorCode.EXTERNAL_AUTH_FAILED, "WeChat mini-program returned empty response");
+        }
+
+        CodeToSessionResponse response;
+        try {
+            response = objectMapper.readValue(body, CodeToSessionResponse.class);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.EXTERNAL_AUTH_FAILED, "Failed to parse WeChat response", e);
+        }
 
         if (response == null || !StringUtils.hasText(response.openid())) {
             throw new BusinessException(ErrorCode.EXTERNAL_AUTH_FAILED, "WeChat mini-program login failed");
