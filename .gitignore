@@ -29,3 +29,6 @@ out/
 
 ### Maven local repository ###
 .m2/
+
+### WorkBuddy agent data (local only) ###
+.workbuddy/

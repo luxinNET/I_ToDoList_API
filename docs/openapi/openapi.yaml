@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: iTodo API
   version: v1
-  description: Cross-platform TodoList HTTP API for mini-program, web, and mobile clients.
+  description: Cross-platform TodoList HTTP API with AI features for mini-program, web, and mobile clients.
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -19,7 +19,18 @@ tags:
   - name: Reminders
   - name: Search
   - name: Sync
+  - name: Calendar
+    description: Calendar view for tasks
+  - name: AI Todo
+    description: AI-powered natural language task creation and decomposition
+  - name: AI Report
+    description: AI-generated daily/weekly reports
+  - name: AI Suggestion
+    description: AI-powered personalized task suggestions
+  - name: Goals
+    description: Long-term goal planning and tracking
 paths:
+  # ==================== Auth ====================
   /api/v1/auth/register:
     post:
       tags: [Auth]
@@ -104,6 +115,8 @@ paths:
       responses:
         '501':
           description: Not implemented in current MVP
+
+  # ==================== Users ====================
   /api/v1/users/me:
     get:
       tags: [Users]
@@ -130,6 +143,8 @@ paths:
       responses:
         '200':
           description: Password changed
+
+  # ==================== Lists ====================
   /api/v1/lists:
     get:
       tags: [Lists]
@@ -197,6 +212,8 @@ paths:
       responses:
         '200':
           description: Deleted
+
+  # ==================== Views ====================
   /api/v1/views/my-day/todos:
     get:
       tags: [Views]
@@ -247,6 +264,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/TodoPageSuccess'
+
+  # ==================== Todos ====================
   /api/v1/todos:
     get:
       tags: [Todos]
@@ -412,6 +431,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/TodoSuccess'
+
+  # ==================== Steps ====================
   /api/v1/todos/{todoId}/steps:
     get:
       tags: [Steps]
@@ -479,6 +500,8 @@ paths:
       responses:
         '200':
           description: Deleted
+
+  # ==================== Tags ====================
   /api/v1/tags:
     get:
       tags: [Tags]
@@ -544,6 +567,8 @@ paths:
       responses:
         '200':
           description: Unbound
+
+  # ==================== Reminders ====================
   /api/v1/reminders:
     get:
       tags: [Reminders]
@@ -609,6 +634,8 @@ paths:
       responses:
         '200':
           description: Deleted
+
+  # ==================== Search ====================
   /api/v1/search/todos:
     get:
       tags: [Search]
@@ -624,6 +651,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/TodoPageSuccess'
+
+  # ==================== Sync ====================
   /api/v1/sync/bootstrap:
     get:
       tags: [Sync]
@@ -659,6 +688,338 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SyncChangesEnvelope'
+
+  # ==================== Calendar (P0) ====================
+  /api/v1/calendar:
+    get:
+      tags: [Calendar]
+      summary: Get calendar overview (task statistics by date range)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Start date (inclusive)
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: End date (inclusive)
+      responses:
+        '200':
+          description: Calendar day statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarDayStatsListEnvelope'
+  /api/v1/calendar/{date}/todos:
+    get:
+      tags: [Calendar]
+      summary: Get todos for a specific date
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+          description: The date to query (YYYY-MM-DD)
+      responses:
+        '200':
+          $ref: '#/components/responses/TodoPageSuccess'
+
+  # ==================== AI Todo - Natural Language Parse (P0) ====================
+  /api/v1/ai/todos/parse:
+    post:
+      tags: [AI Todo]
+      summary: Parse natural language input into structured todo (preview)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiTodoParseRequest'
+      responses:
+        '200':
+          description: Parsed todo preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiTodoParseResponseEnvelope'
+  /api/v1/ai/todos:
+    post:
+      tags: [AI Todo]
+      summary: Confirm and create AI-parsed todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiTodoConfirmRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TodoSuccess'
+
+  # ==================== AI Todo - Task Decomposition (P1) ====================
+  /api/v1/ai/todos/{todoId}/decompose:
+    post:
+      tags: [AI Todo]
+      summary: AI decomposes a task into subtasks (preview)
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiDecomposeRequest'
+      responses:
+        '200':
+          description: Decomposition preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiDecomposeResponseEnvelope'
+  /api/v1/ai/todos/{todoId}/decompose/confirm:
+    post:
+      tags: [AI Todo]
+      summary: Confirm and create AI-decomposed subtasks
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiDecomposeConfirmRequest'
+      responses:
+        '200':
+          description: Subtasks created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoStepListEnvelope'
+
+  # ==================== AI Report - Daily/Weekly Reports (P1) ====================
+  /api/v1/ai/reports/daily:
+    get:
+      tags: [AI Report]
+      summary: Get or generate daily report
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "Date for report (default: today)"
+      responses:
+        '200':
+          description: Daily report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiReportResponseEnvelope'
+    post:
+      tags: [AI Report]
+      summary: Generate daily report
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "Date for report (default: today)"
+      responses:
+        '200':
+          description: Daily report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiReportResponseEnvelope'
+  /api/v1/ai/reports/weekly:
+    get:
+      tags: [AI Report]
+      summary: Get or generate weekly report
+      parameters:
+        - name: weekStart
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "Week start date (default: this Monday)"
+      responses:
+        '200':
+          description: Weekly report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiReportResponseEnvelope'
+    post:
+      tags: [AI Report]
+      summary: Generate weekly report
+      parameters:
+        - name: weekStart
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "Week start date (default: this Monday)"
+      responses:
+        '200':
+          description: Weekly report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiReportResponseEnvelope'
+
+  # ==================== AI Suggestion - Personalized Task Suggestions (P2) ====================
+  /api/v1/ai/suggestions/next:
+    get:
+      tags: [AI Suggestion]
+      summary: Get AI suggestion for next task to work on
+      responses:
+        '200':
+          description: Next task suggestion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiSuggestionResponseEnvelope'
+
+  # ==================== Goals - Long-term Planning (P2) ====================
+  /api/v1/goals:
+    get:
+      tags: [Goals]
+      summary: List goals
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, COMPLETED, ARCHIVED]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Goals list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalPageResponseEnvelope'
+    post:
+      tags: [Goals]
+      summary: Create a goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoalRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/GoalSuccess'
+  /api/v1/goals/{goalId}:
+    get:
+      tags: [Goals]
+      summary: Get a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      responses:
+        '200':
+          $ref: '#/components/responses/GoalSuccess'
+    patch:
+      tags: [Goals]
+      summary: Update a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGoalRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/GoalSuccess'
+    delete:
+      tags: [Goals]
+      summary: Delete a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      responses:
+        '200':
+          description: Deleted
+  /api/v1/goals/{goalId}/todos:
+    get:
+      tags: [Goals]
+      summary: Get todos linked to a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      responses:
+        '200':
+          $ref: '#/components/responses/TodoPageSuccess'
+    post:
+      tags: [Goals]
+      summary: Link a todo to a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkTodoToGoalRequest'
+      responses:
+        '200':
+          description: Linked
+  /api/v1/goals/{goalId}/todos/{todoId}:
+    delete:
+      tags: [Goals]
+      summary: Unlink a todo from a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '200':
+          description: Unlinked
+  /api/v1/goals/{goalId}/generate-tasks:
+    post:
+      tags: [Goals]
+      summary: AI generates tasks for a goal (preview)
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateTasksRequest'
+      responses:
+        '200':
+          description: Generated tasks preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateTasksResponseEnvelope'
+  /api/v1/goals/{goalId}/generate-tasks/confirm:
+    post:
+      tags: [Goals]
+      summary: Confirm and create AI-generated tasks for a goal
+      parameters:
+        - $ref: '#/components/parameters/GoalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateTasksConfirmRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TodoPageSuccess'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -688,6 +1049,11 @@ components:
       schema: { type: string, format: uuid }
     ReminderId:
       name: reminderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    GoalId:
+      name: goalId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -748,7 +1114,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ReminderPageResponseEnvelope'
+    GoalSuccess:
+      description: Goal operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GoalResponseEnvelope'
+    AiReportSuccess:
+      description: AI report operation succeeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AiReportResponseEnvelope'
   schemas:
+    # ==================== Base Types ====================
     ApiError:
       type: object
       properties:
@@ -761,6 +1140,8 @@ components:
             properties:
               field: { type: string }
               message: { type: string }
+
+    # ==================== Auth ====================
     RegisterRequest:
       type: object
       required: [password]
@@ -801,6 +1182,8 @@ components:
         refreshToken: { type: string }
         accessTokenExpiresAt: { type: string, format: date-time }
         refreshTokenExpiresAt: { type: string, format: date-time }
+
+    # ==================== Todo Lists ====================
     TodoListResponse:
       type: object
       properties:
@@ -826,6 +1209,8 @@ components:
         name: { type: string, maxLength: 128 }
         color: { type: string, maxLength: 32 }
         icon: { type: string, maxLength: 64 }
+
+    # ==================== Reorder ====================
     ReorderItemRequest:
       type: object
       required: [id, sortOrder]
@@ -847,6 +1232,8 @@ components:
         items:
           type: array
           items: { $ref: '#/components/schemas/ReorderItemRequest' }
+
+    # ==================== Todos ====================
     CreateTodoRequest:
       type: object
       required: [title]
@@ -894,6 +1281,8 @@ components:
         version: { type: integer, format: int64 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    # ==================== Steps ====================
     CreateTodoStepRequest:
       type: object
       required: [title]
@@ -917,6 +1306,8 @@ components:
         sortOrder: { type: integer }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    # ==================== Tags ====================
     CreateTagRequest:
       type: object
       required: [name]
@@ -936,6 +1327,8 @@ components:
         color: { type: string }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    # ==================== Reminders ====================
     CreateReminderRequest:
       type: object
       required: [remindAt]
@@ -959,6 +1352,8 @@ components:
         sentAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    # ==================== Sync ====================
     TodoTagLinkResponse:
       type: object
       properties:
@@ -968,7 +1363,7 @@ components:
       type: object
       properties:
         version: { type: integer, format: int64 }
-        resourceType: { type: string, enum: [LIST, TODO, STEP, TAG, TODO_TAG, REMINDER] }
+        resourceType: { type: string, enum: [LIST, TODO, STEP, TAG, TODO_TAG, REMINDER, GOAL] }
         resourceId: { type: string, format: uuid }
         operation: { type: string, enum: [CREATE, UPDATE, DELETE] }
         changedAt: { type: string, format: date-time }
@@ -1002,6 +1397,255 @@ components:
         reminders:
           type: array
           items: { $ref: '#/components/schemas/ReminderResponse' }
+
+    # ==================== Calendar (P0) ====================
+    CalendarDayStats:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        total: { type: integer, format: int64 }
+        completed: { type: integer, format: int64 }
+        active: { type: integer, format: int64 }
+        overdue: { type: integer, format: int64 }
+    CalendarDayStatsListEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CalendarDayStats' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+
+    # ==================== AI Todo Parse (P0) ====================
+    AiTodoParseRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: "Natural language input, e.g. '下周三下午提醒我准备季度报告'"
+          example: "下周三下午提醒我准备季度报告"
+        timezone:
+          type: string
+          default: "Asia/Shanghai"
+          description: "User timezone"
+    ParsedTodo:
+      type: object
+      properties:
+        title: { type: string, description: "Parsed task title" }
+        note: { type: string, description: "Parsed note" }
+        dueDate:
+          type: string
+          format: date
+          description: "Parsed due date (YYYY-MM-DD)"
+        remindAt:
+          type: string
+          format: date-time
+          description: "Parsed reminder time"
+        importance:
+          type: string
+          enum: [NORMAL, IMPORTANT]
+          description: "Parsed importance"
+        tags:
+          type: array
+          items: { type: string }
+          description: "Parsed tags"
+        listName:
+          type: string
+          description: "Suggested list name"
+    AiTodoParseResponse:
+      type: object
+      properties:
+        previewId:
+          type: string
+          description: "Preview ID for confirmation"
+        parsedTodo: { $ref: '#/components/schemas/ParsedTodo' }
+        suggestion:
+          type: string
+          description: "AI suggestion text"
+    AiTodoConfirmRequest:
+      type: object
+      required: [previewId, parsedTodo]
+      properties:
+        previewId: { type: string }
+        parsedTodo: { $ref: '#/components/schemas/ParsedTodo' }
+    AiTodoParseResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/AiTodoParseResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+
+    # ==================== AI Task Decomposition (P1) ====================
+    AiDecomposeRequest:
+      type: object
+      properties:
+        hint:
+          type: string
+          description: "Optional hint for decomposition"
+    AiDecomposedStep:
+      type: object
+      properties:
+        title: { type: string }
+        sortOrder: { type: integer }
+    AiDecomposeResponse:
+      type: object
+      properties:
+        previewId: { type: string }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/AiDecomposedStep' }
+        suggestion: { type: string }
+    AiDecomposeConfirmRequest:
+      type: object
+      required: [previewId, steps]
+      properties:
+        previewId: { type: string }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/AiDecomposedStep' }
+    AiDecomposeResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/AiDecomposeResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+
+    # ==================== AI Report (P1) ====================
+    AiReportResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        reportType: { type: string, enum: [DAILY, WEEKLY] }
+        reportDate: { type: string, format: date }
+        content: { type: string, description: "AI-generated report content (Markdown)" }
+        stats:
+          type: object
+          description: "Task statistics used for report generation"
+          properties:
+            totalCompleted: { type: integer }
+            totalCreated: { type: integer }
+            completionRate: { type: number, format: double }
+            topTags:
+              type: array
+              items: { type: string }
+        createdAt: { type: string, format: date-time }
+    AiReportResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/AiReportResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+
+    # ==================== AI Suggestion (P2) ====================
+    AiSuggestionResponse:
+      type: object
+      properties:
+        suggestedTodoId:
+          type: string
+          format: uuid
+          description: "Recommended todo to work on next"
+        reason:
+          type: string
+          description: "AI explanation for the suggestion"
+        alternatives:
+          type: array
+          items:
+            type: object
+            properties:
+              todoId: { type: string, format: uuid }
+              score: { type: number, format: double }
+              reason: { type: string }
+    AiSuggestionResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/AiSuggestionResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+
+    # ==================== Goals (P2) ====================
+    GoalResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [ACTIVE, COMPLETED, ARCHIVED] }
+        targetDate: { type: string, format: date }
+        progress:
+          type: number
+          format: double
+          description: "Progress percentage (0.0 - 1.0)"
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateGoalRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 255 }
+        description: { type: string }
+        targetDate: { type: string, format: date }
+    UpdateGoalRequest:
+      type: object
+      properties:
+        title: { type: string, maxLength: 255 }
+        description: { type: string }
+        status: { type: string, enum: [ACTIVE, COMPLETED, ARCHIVED] }
+        targetDate: { type: string, format: date }
+        progress: { type: number, format: double }
+    LinkTodoToGoalRequest:
+      type: object
+      required: [todoId]
+      properties:
+        todoId: { type: string, format: uuid }
+    GenerateTasksRequest:
+      type: object
+      properties:
+        hint:
+          type: string
+          description: "Optional hint for task generation"
+    GenerateTasksResponse:
+      type: object
+      properties:
+        previewId: { type: string }
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              dueDate: { type: string, format: date }
+              importance: { type: string, enum: [NORMAL, IMPORTANT] }
+        suggestion: { type: string }
+    GenerateTasksResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/GenerateTasksResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    GenerateTasksConfirmRequest:
+      type: object
+      required: [previewId, tasks]
+      properties:
+        previewId: { type: string }
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              dueDate: { type: string, format: date }
+              importance: { type: string, enum: [NORMAL, IMPORTANT] }
+
+    # ==================== Response Envelopes ====================
     AuthResponseEnvelope:
       type: object
       properties:
@@ -1096,6 +1740,28 @@ components:
             items:
               type: array
               items: { $ref: '#/components/schemas/ReminderResponse' }
+            total: { type: integer, format: int64 }
+            page: { type: integer, format: int64 }
+            size: { type: integer, format: int64 }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    GoalResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/GoalResponse' }
+        error: { $ref: '#/components/schemas/ApiError' }
+        traceId: { type: string }
+    GoalPageResponseEnvelope:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/GoalResponse' }
             total: { type: integer, format: int64 }
             page: { type: integer, format: int64 }
             size: { type: integer, format: int64 }

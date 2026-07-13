@@ -3,6 +3,7 @@ package com.example.itodo.common.error;
 import com.example.itodo.common.api.ApiError;
 import com.example.itodo.common.api.ApiResponse;
 import com.example.itodo.common.api.FieldViolation;
+import com.example.itodo.ai.AiException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -50,6 +51,19 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException exception, HttpServletRequest request) {
         ApiError error = ApiError.of(ErrorCode.VALIDATION_FAILED.name(), exception.getMessage());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.fail(error, traceId(request)));
+    }
+
+    @ExceptionHandler(AiException.class)
+    ResponseEntity<ApiResponse<Void>> handleAiException(AiException exception, HttpServletRequest request) {
+        HttpStatus status = switch (exception.getCode()) {
+            case AI_SERVICE_UNAVAILABLE -> HttpStatus.BAD_GATEWAY;
+            case AI_QUOTA_EXCEEDED -> HttpStatus.TOO_MANY_REQUESTS;
+            case INVALID_AI_INPUT -> HttpStatus.BAD_REQUEST;
+            default -> HttpStatus.INTERNAL_SERVER_ERROR;
+        };
+        log.warn("AI exception: code={}, message={}", exception.getCode(), exception.getMessage());
+        return ResponseEntity.status(status)
+                .body(ApiResponse.fail(ApiError.of(exception.getCode().name(), exception.getMessage()), traceId(request)));
     }
 
     @ExceptionHandler(BusinessException.class)

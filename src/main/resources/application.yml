@@ -75,3 +75,13 @@ app:
     mini-program:
       app-id: ${WECHAT_MINI_PROGRAM_APP_ID:}
       secret: ${WECHAT_MINI_PROGRAM_SECRET:}
+  llm:
+    enabled: true
+    base-url: https://api.deepseek.com
+    api-key: ${LLM_API_KEY:}
+    model: deepseek-chat
+    temperature: 0.3
+    max-tokens: 1024
+    timeout-seconds: 30
+    cache-ttl-seconds: 300
+    daily-quota-per-user: 100
