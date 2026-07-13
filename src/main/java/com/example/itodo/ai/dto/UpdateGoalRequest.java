@@ -1,16 +1,12 @@
 package com.example.itodo.ai.dto;
 
 import java.time.LocalDate;
-import java.util.List;
 
-public record GoalResponse(
-    String id,
+public record UpdateGoalRequest(
     String title,
     String description,
     String status,
     LocalDate targetDate,
-    String color,
-    Double completionRate,
-    List<MilestoneResponse> milestones
+    String color
 ) {
 }
