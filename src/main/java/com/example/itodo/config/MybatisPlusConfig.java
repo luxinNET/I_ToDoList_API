@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.example.itodo.common.mybatis.UUIDTypeHandler;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,10 @@ public class MybatisPlusConfig {
         factoryBean.setDataSource(dataSource);
         factoryBean.setPlugins(mybatisPlusInterceptor);
         factoryBean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/**/*.xml"));
+        // Register a UUID <-> PostgreSQL uuid type handler. Without it, every INSERT/UPDATE
+        // on UUID-typed columns (id, owner_id, user_id, ...) fails with
+        // "Type handler was null on parameter mapping for property 'id'".
+        factoryBean.setTypeHandlers(new UUIDTypeHandler());
         return factoryBean.getObject();
     }
 
